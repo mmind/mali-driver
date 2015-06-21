@@ -7,7 +7,7 @@ Standards-Version: 3.9.6
 
 Package: mali-driver
 Architecture: all
-Depends: debconf | debconf-2.0, wget, glx-diversions, ${misc:Depends}, ${shlibs:Depends}
+Depends: debconf | debconf-2.0, wget, glx-diversions, sudo, ${misc:Depends}, ${shlibs:Depends}
 Conflicts: glx-alternative-mesa
 Description: ARM Mali driver
  This package will download the driver for various ARM-Mali implementation from
