@@ -1,0 +1,315 @@
+#!/bin/sh
+
+# Copyright (C) 2015 Heiko Stuebner <heiko@sntech.de>
+#
+# based on update-flashplugin-nonfree
+# Copyright (C) 2006-2014 Bart Martens <bartm@knars.be>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+set -e
+
+datadir="/usr/lib/mali-driver"
+
+
+downloadfile=""
+downloadurl=""
+target=""
+installed=none
+upstream=none
+supported="rockchip,rk3288"
+valid_version=no
+targetdir=/tmp
+
+#ordered by increasing time, newest last
+versions_rockchip_rk3288() {
+	available_versions="veyron-1.20-r18 veyron-x11-1.20-r22"
+}
+
+targetdir_rockchip_rk3288() {
+	targetdir=/usr/lib/arm-linux-gnueabihf
+}
+
+download_rockchip_rk3288() {
+	downloadfile="mali-drivers-$target.run"
+	downloadurl="http://commondatastorage.googleapis.com/chromeos-localmirror/distfiles/$downloadfile"
+
+}
+
+installed_version_rockchip_rk3288() {
+	targetdir_rockchip_rk3288
+	curdir=`pwd`
+	cd $targetdir
+
+	versions_rockchip_rk3288
+	installed=none
+	set +e
+	for i in $available_versions; do
+		sha512sum -c --quiet --strict $datadir/installed-$i.sha512sum >/dev/null 2>&1
+		if [ "$?" = "0" ]; then
+			installed=$i
+			[ "$verbose" != "yes" ] || echo "found installed : $installed"
+			cd $curdir
+			return
+		fi
+	done
+	set -e
+
+	[ "$verbose" != "yes" ] || echo "found installed : $installed"
+	cd $curdir
+}
+
+upstream_version_rockchip_rk3288() {
+	versions_rockchip_rk3288
+	for i in $available_versions; do
+		upstream=$i
+	done
+}
+
+check_version_rockchip_rk3288() {
+	versions_rockchip_rk3288
+	valid_version=no
+
+	for i in $available_versions; do
+		if [ "$i" = "$target" ]; then
+			valid_version=yes
+		fi
+	done
+}
+
+
+return_0() {
+	return 0
+}
+
+trap "return_0" 0
+
+die_hard() {
+	echo "ERROR: $1" >&2
+	exit 1
+}
+
+[ `whoami` = "root" ] || die_hard "must be root"
+
+show_usage() {
+	echo "Usage:"
+	echo "  update-mali-driver --install"
+	echo "  update-mali-driver --uninstall"
+	echo "  update-mali-driver --status"
+	echo "Additional options:"
+	echo "  --verbose"
+	echo "  --quiet"
+	exit 1
+}
+
+getopt_temp=`getopt -o iusfvqn --long install,uninstall,status,fast,verbose,quiet -n 'update-mali-driver' -- "$@"` || show_usage
+eval set -- "$getopt_temp" || show_usage
+
+ACTION=none
+fast=no
+verbose=no
+quiet=no
+
+while [ true ]
+do
+	case "$1" in
+		-i|--install)
+			ACTION="--install"
+			shift
+			;;
+		-u|--uninstall)
+			ACTION="--uninstall"
+			shift
+			;;
+		-s|--status)
+			ACTION="--status"
+			shift
+			;;
+		-f|--fast)
+			fast=yes
+			shift
+			;;
+		-v|--verbose)
+			verbose=yes
+			shift
+			;;
+		-q|--quiet)
+			quiet=yes
+			shift
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			echo "Internal error!" >&2
+			exit 1
+			;;
+	esac
+done
+
+[ "$ACTION" != "none" -a $# -eq 0 ] || show_usage
+[ "$quiet" != "yes" ] || verbose=no
+
+[ "$verbose" != "yes" ] || echo "options : $getopt_temp"
+
+UNPACKDIR=`mktemp -d /tmp/mali-driver.XXXXXXXXXX` || die_hard "mktemp failed"
+echo "$UNPACKDIR" | grep -q "^/tmp/mali-driver\." || die_hard "paranoia"
+chown nobody $UNPACKDIR
+cd "$UNPACKDIR" || die_hard "cd failed"
+
+[ "$verbose" != "yes" ] || echo "temporary directory: $UNPACKDIR"
+
+do_cleanup() {
+	[ "$verbose" != "yes" ] || echo "cleaning up temporary directory $UNPACKDIR ..."
+	cd /
+	echo "$UNPACKDIR" | grep -q "^/tmp/mali-driver\." || die_hard "paranoia"
+	rm -rf "$UNPACKDIR"
+}
+
+die_hard_with_a_cleanup() {
+	return_0
+	do_cleanup
+	die_hard "$1"
+}
+
+trap "die_hard_with_a_cleanup interrupted" INT
+
+if [ ! -f /sys/firmware/devicetree/base/compatible ]; then
+	die_hard_with_a_cleanup "no devicetree information found"
+fi
+
+# find machine type and try to match against supported machines
+machine=`xargs --null < /sys/firmware/devicetree/base/compatible`
+[ "$verbose" != "yes" ] || echo "this machine $machine"
+
+found=""
+for i in $machine; do
+	for j in $supported; do
+		if [ "$i" = "$j" ]; then
+			[ "$verbose" != "yes" ] || echo "found match $j"
+			found=$i
+		fi
+	done
+done
+
+if [ "x$found" = "x" ]; then
+	die_hard_with_a_cleanup "no matching driver found"
+fi
+
+platform=`echo $found | tr , _`
+
+
+# version handling
+get_installed_version() {
+	installed_version_$platform
+}
+
+get_upstream_version() {
+	upstream_version_$platform
+}
+
+get_targetdir() {
+	targetdir_$platform
+}
+
+check_version() {
+	valid_version=no
+	check_version_$platform
+}
+
+wgetquiet=' -nv -q '
+wgetalways=' -nd -P . '
+wgetprogress=' -v --progress=dot:default '
+
+
+
+case "$ACTION" in
+	--install)
+		[ "$verbose" != "yes" ] || echo "selected action = $ACTION"
+
+			get_installed_version
+			if [ -z "$MALI_TARGET_VERSION" ]; then
+				get_upstream_version
+				target="$upstream"
+			else
+				target="$MALI_TARGET_VERSION"
+				check_version
+				if [ "$valid_version" != "yes" ]; then
+					die_hard_with_a_cleanup "$target is not a valid version"
+				fi
+			fi
+
+			if [ "$installed" = "$target" ]; then
+				echo "already uptodate at version $target"
+				do_cleanup
+				exit 0
+			fi
+
+			wgetoptions="$wgetquiet $wgetalways"
+			[ "$verbose" != "yes" ] || wgetoptions="$wgetalways $wgetprogress"
+			[ "$verbose" != "yes" ] || echo "wgetoptions=$wgetoptions"
+
+			# get download informations
+			download_$platform
+
+			[ "$verbose" != "yes" ] || echo "downloading $downloadurl ..."
+			HOME=/root \
+			wget $wgetoptions $downloadurl \
+				|| [ "$verbose" != "yes" ] || echo "wget failed to download $downloadurl" >&2
+
+			# extract downloadfile
+			sudo -u nobody sh $downloadfile
+
+			sha512sum -c --strict $datadir/$target.sha512sum || die_hard_with_a_cleanup "checksum does not match"
+
+			get_targetdir
+			for i in `cat $datadir/veyron-x11-1.20-r22.sha512sum  | cut -d "*" -f 2`; do
+				[ "$verbose" != "yes" ] || echo "installing $i to $targetdir"
+				cp -a $i $targetdir
+			done
+
+		[ "$verbose" != "yes" ] || echo "end of action $ACTION"
+		;;
+	--uninstall)
+		[ "$verbose" != "yes" ] || echo "selected action = $ACTION"
+
+		[ "$verbose" != "yes" ] || echo "removing files ..."
+
+		get_installed_version
+		for i in `cat $datadir/installed-veyron-x11-1.20-r22.sha512sum  | cut -d "*" -f 2`; do
+			[ "$verbose" != "yes" ] || echo "removing $i from $targetdir"
+			rm $targetdir/$i
+		done
+
+		[ "$verbose" != "yes" ] || echo "end of action $ACTION"
+		;;
+	--status)
+		[ "$verbose" != "yes" ] || echo "selected action = $ACTION"
+
+		get_installed_version
+		echo "Mali driver version installed on this system  : $installed"
+		get_upstream_version
+		echo "Mali driver version available on upstream site: $upstream"
+
+		[ "$verbose" != "yes" ] || echo "end of action $ACTION"
+		;;
+	*)
+		do_cleanup
+		show_usage
+		;;
+esac
+
+do_cleanup
+
+[ "$verbose" != "yes" ] || echo "end of update-mali-driver"

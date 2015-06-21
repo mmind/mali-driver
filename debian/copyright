@@ -1,0 +1,37 @@
+This package was debianized by Heiko Stuebner <mmind@debian.org> on
+Wed, 30 May 2015 09:06:15 +0200.
+
+Upstream author:
+
+   Heiko Stuebner <mmind@debian.org>
+
+Copyright:
+
+   Copyright (C) 2015 Heiko Stuebner <mmind@debian.org>
+
+   based on update-flashplugin-nonfree
+   Copyright (C) 2006-2014 Bart Martens <bartm@knars.be>
+
+License:
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2 as
+   published by the Free Software Foundation.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+On Debian systems, the complete text of the GNU General Public License
+version 2 can be found in `/usr/share/common-licenses/GPL-2'.
+
+The Debian packaging is
+Copyright (C) 2015 Heiko Stuebner <mmind@debian.org>
+and is licensed under the GPL version 2, see above.
+
+Note that this package does _not_ contain any software from ARM, Google
+or Rockchip.

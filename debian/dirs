@@ -1,0 +1,3 @@
+etc/udev/rules.d
+usr/lib/mali-driver
+usr/bin

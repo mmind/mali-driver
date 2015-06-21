@@ -1,0 +1,3 @@
+update-mali-driver usr/sbin/
+*.sha512sum usr/lib/mali-driver/
+50-mali.rules etc/udev/rules.d

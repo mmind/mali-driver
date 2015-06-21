@@ -1,0 +1,20 @@
+Source: mali-driver
+Section: contrib/libs
+Priority: optional
+Maintainer: Heiko Stuebner <mmind@debian.org>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.9.6
+
+Package: mali-driver
+Architecture: all
+Depends: debconf | debconf-2.0, wget, glx-diversions, ${misc:Depends}, ${shlibs:Depends}
+Conflicts: glx-alternative-mesa
+Description: ARM Mali driver
+ This package will download the driver for various ARM-Mali implementation from
+ a suitable source. This provides vendor-specific implementations of libEGL,
+ libGLESv1 and libGLESv2 and makes it possible to use accelerated 3d graphics
+ on supported SoCs.
+ .
+ WARNING: Installing this Debian package causes the Mali driver
+ to be downloaded from an internet source.
+ The End User License Agreement will be displayed at install time.
