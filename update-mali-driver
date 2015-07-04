@@ -185,12 +185,12 @@ die_hard_with_a_cleanup() {
 
 trap "die_hard_with_a_cleanup interrupted" INT
 
-if [ ! -f /sys/firmware/devicetree/base/compatible ]; then
+if [ ! -f /proc/device-tree/compatible ]; then
 	die_hard_with_a_cleanup "no devicetree information found"
 fi
 
 # find machine type and try to match against supported machines
-machine=`xargs --null < /sys/firmware/devicetree/base/compatible`
+machine=`xargs --null < /proc/device-tree/compatible`
 [ "$verbose" != "yes" ] || echo "this machine $machine"
 
 found=""
