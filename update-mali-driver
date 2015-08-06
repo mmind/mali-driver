@@ -33,7 +33,7 @@ targetdir=/tmp
 
 #ordered by increasing time, newest last
 versions_rockchip_rk3288() {
-	available_versions="veyron-1.20-r18 veyron-x11-1.20-r22"
+	available_versions="veyron-1.20-r18 veyron-x11-1.20-r22 veyron-x11-1.20-r26"
 }
 
 targetdir_rockchip_rk3288() {
