@@ -7,8 +7,7 @@ Standards-Version: 3.9.6
 
 Package: mali-driver
 Architecture: all
-Depends: debconf | debconf-2.0, wget, glx-diversions, sudo, ${misc:Depends}, ${shlibs:Depends}
-Conflicts: glx-alternative-mesa
+Depends: debconf | debconf-2.0, wget, glx-alternative-mali, sudo, ${misc:Depends}, ${shlibs:Depends}
 Description: ARM Mali driver
  This package will download the driver for various ARM-Mali implementation from
  a suitable source. This provides vendor-specific implementations of libEGL,
@@ -18,3 +17,23 @@ Description: ARM Mali driver
  WARNING: Installing this Debian package causes the Mali driver
  to be downloaded from an internet source.
  The End User License Agreement will be displayed at install time.
+
+Package: glx-alternative-mali
+Architecture: all
+Multi-Arch: foreign
+Depends:
+ glx-diversions (>= 0.5.1),
+ glx-alternative-mesa,
+ ${misc:Depends}
+Suggests:
+ mali-driver,
+Description: allows the selection of Mali as GL(es) provider
+ In setups with several GLX providers (e.g. the free MESA implementation and
+ proprietary graphics hardware vendor implementations) this metapackage
+ allows one to switch to the non-free Mali libraries.
+ .
+ Use 'update-alternatives --config glx' to select an implementation.
+ .
+ This package does not depend on the corresponding Mali libraries.
+ In order to install the Mali driver and libraries, install the mali-driver
+ package instead.

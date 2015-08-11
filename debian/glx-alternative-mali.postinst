@@ -1,0 +1,97 @@
+#!/bin/sh
+set -e
+
+
+TRIPLETS="/ /arm-linux-gnueabihf/"
+
+add_slave()
+{
+	local target_link name source_path prefix
+	target_link="$1"
+	name="$2"
+	source_path="$3"
+	prefix="glx--"
+
+	if [ -f "${source_path}" ] && [ -d "$(dirname "${target_link}")" ]; then
+		echo --slave "${target_link}" "${prefix}${name}" "${source_path}"
+	fi
+}
+
+add_multiarch_slave()
+{
+	local target_dir target_sub_dir file source_dir source_sub_dir prefix suffix triplet
+	target_dir="$1"
+	target_sub_dir="$2"
+	file="$3"
+	source_dir="$4"
+	source_sub_dir="$5"
+	prefix="$6"
+
+	for triplet in $TRIPLETS ; do
+		# s|/$||; s|^/|-|;
+		suffix="${triplet%/}"
+		suffix="${suffix:+-${suffix#/}}"
+		add_slave \
+			"${target_dir}${triplet}${target_sub_dir}${file}" \
+			"${prefix}${file}${suffix}" \
+			"${source_dir}${triplet}${source_sub_dir}${file}"
+	done
+}
+
+# try to find $library in $vendor, mesa, mesa-diverted
+search_multiarch_slave()
+{
+	local library vendor s
+	library="$1"
+	vendor="$2"
+
+	s="$(add_multiarch_slave /usr/lib "" $library /usr/lib $vendor/)"
+	if echo "$s" | grep -q "slave" ; then
+		echo "$s"
+		return
+	fi
+	s="$(add_multiarch_slave /usr/lib "" $library /usr/lib mesa/)"
+	if echo "$s" | grep -q "slave" ; then
+		echo "$s"
+		return
+	fi
+	s="$(add_multiarch_slave /usr/lib "" $library /usr/lib/mesa-diverted)"
+	echo "$s"
+}
+
+# Handles the alternatives for
+# * libmali.so.0.1.20
+# * libEGL.so.1 symlink
+# * libGLES* symlinks
+# * /usr/lib[/<triplet>]/libGL.so.1 either from glshim or mesa
+setup_alternatives()
+{
+	slaves="
+		$(add_slave /usr/lib/libmali.so.0.1.20 libmali.so.0.1.20 /usr/lib/mali/libmali.so.0.1.20)
+"
+
+	libGL_slaves="
+		$(search_multiarch_slave libGL.so.1 glshim)
+"
+
+	minor_slaves="
+		$(add_slave /usr/lib/libEGL.so.1 libEGL.so.1 /usr/lib/mali/libEGL.so.1)
+		$(add_slave /usr/lib/libGLESv1_CM.so.1 libGLESv1_CM.so.1 /usr/lib/mali/libGLESv1_CM.so.1)
+		$(add_slave /usr/lib/libGLESv2.so.2 libGLESv2.so.2 /usr/lib/mali/libGLESv2.so.2)
+"
+
+	if echo "$slaves" | grep -q "slave"; then
+		update-alternatives --install /usr/lib/glx glx /usr/lib/mali 100 $slaves $libGL_slaves $minor_slaves
+	else
+		update-alternatives --remove glx /usr/lib/mali
+	fi
+
+	ldconfig
+}
+
+if [ "$1" = "triggered" ] || [ "$1" = "configure" ]; then
+	setup_alternatives
+fi
+
+
+#DEBHELPER#
