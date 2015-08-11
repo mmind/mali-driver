@@ -19,7 +19,7 @@
 
 set -e
 
-datadir="/usr/lib/mali-driver"
+datadir="/usr/lib/mali"
 
 
 downloadfile=""
@@ -37,7 +37,7 @@ versions_rockchip_rk3288() {
 }
 
 targetdir_rockchip_rk3288() {
-	targetdir=/usr/lib/arm-linux-gnueabihf
+	targetdir=/usr/lib/mali
 }
 
 download_rockchip_rk3288() {
